@@ -1,0 +1,124 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>鲸鱼娘表情包 · 透明底 10 枚</title>
+<style>
+  :root { --ink:#26365F; --pink:#F6B3C0; --blue:#4A74C8; }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; padding:32px 24px 56px;
+    font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    color: var(--ink);
+    background: linear-gradient(160deg,#FDF6F8 0%,#F3F7FE 100%);
+  }
+  h1 { font-size: 22px; margin: 0 0 6px; letter-spacing: .5px; }
+  .sub { font-size: 13px; opacity:.68; margin-bottom: 20px; }
+  .bar { display:flex; gap:8px; margin-bottom:22px; flex-wrap:wrap; }
+  .bar button {
+    border:1px solid #D6E0F2; background:#fff; color:var(--ink);
+    padding:7px 14px; border-radius:999px; font-size:13px; cursor:pointer;
+    transition:.18s;
+  }
+  .bar button:hover { border-color: var(--blue); color: var(--blue); }
+  .bar button.on { background: var(--blue); border-color: var(--blue); color:#fff; }
+  .grid {
+    display:grid; gap:18px;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  }
+  .card {
+    border-radius:18px; padding:14px; text-align:center;
+    border:1px solid #E4EBF7; background:#fff;
+    box-shadow: 0 6px 18px rgba(74,116,200,.07);
+  }
+  .stage {
+    height:170px; border-radius:12px; display:flex;
+    align-items:center; justify-content:center; overflow:hidden;
+    background-image:
+      linear-gradient(45deg,#EDF1F8 25%,transparent 25%),
+      linear-gradient(-45deg,#EDF1F8 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#EDF1F8 75%),
+      linear-gradient(-45deg,transparent 75%,#EDF1F8 75%);
+    background-size: 18px 18px;
+    background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+    background-color:#fff;
+  }
+  .stage img { width:150px; height:150px; object-fit:contain; }
+  .name { margin-top:10px; font-size:13px; font-weight:600; }
+  .label { font-size:11px; opacity:.55; margin-top:2px; }
+  a.dl { font-size:11px; color:var(--blue); text-decoration:none; }
+  a.dl:hover { text-decoration:underline; }
+  body.dark { background:#1C2434; color:#E8EEFA; }
+  body.dark .card { background:#232C3E; border-color:#31405C; }
+  body.dark .stage { background-color:#2B3648; background-image:none; }
+  body.dark .bar button { background:#232C3E; border-color:#31405C; color:#D7E2F5; }
+  body.pink { background: linear-gradient(160deg,#FFEFF4 0%,#FFF8FB 100%); }
+  body.pink .card { border-color:#FBD9E3; background:#FFFCFD; }
+  body.pink .stage { background-image:none; background-color: var(--pink); }
+</style>
+</head>
+<body>
+<h1>鲸鱼娘 · 柔光版 10 枚</h1>
+<div class="sub">512 × 512 PNG · 32 位透明通道 · 柔光渐变 · 纸纹颗粒 · 柔边笔触 · 点下面的按钮换背景检查抠边</div>
+
+<div class="bar">
+  <button data-bg="checker" class="on">棋盘格</button>
+  <button data-bg="pink">粉色底</button>
+  <button data-bg="dark">深色底</button>
+  <button data-bg="white">纯白底</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const items = [
+  ['01-happy.png', '开心', '弯眼笑'],
+  ['02-laugh.png', '大笑', '张嘴笑'],
+  ['03-cry.png', '大哭', '两道泪'],
+  ['04-angry.png', '生气', '皱眉鼓嘴'],
+  ['05-sleepy.png', '困了', '闭眼 zzz'],
+  ['06-confused.png', '疑惑', '一高一低眼'],
+  ['07-shy.png', '害羞', '闭眼红脸'],
+  ['08-surprised.png', '惊讶', '圆眼小嘴'],
+  ['09-speechless.png', '无语', '半月眼汗滴'],
+  ['10-love.png', '比心', '爱心眼']
+];
+const grid = document.getElementById('grid');
+for (const [file, name, note] of items) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="stage"><img src="${file}" alt="${name}"></div>
+    <div class="name">${name}</div>
+    <div class="label">${note} · ${file}</div>
+    <a class="dl" href="${file}" download>下载 PNG</a>`;
+  grid.appendChild(card);
+}
+document.querySelectorAll('.bar button').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.bar button').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    const bg = btn.dataset.bg;
+    document.body.className = bg === 'checker' ? '' : bg;
+    const stages = document.querySelectorAll('.stage');
+    stages.forEach(s => {
+      if (bg === 'checker') {
+        s.style.backgroundImage = '';
+        s.style.backgroundColor = '';
+      } else if (bg === 'white') {
+        s.style.backgroundImage = 'none';
+        s.style.backgroundColor = '#ffffff';
+      } else if (bg === 'pink') {
+        s.style.backgroundImage = 'none';
+        s.style.backgroundColor = '#F6B3C0';
+      } else {
+        s.style.backgroundImage = 'none';
+        s.style.backgroundColor = '#2B3648';
+      }
+    });
+  };
+});
+</script>
+</body>
+</html>
+

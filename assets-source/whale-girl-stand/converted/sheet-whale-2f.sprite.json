@@ -1,0 +1,18 @@
+{
+  "image": "sheet-whale-2f.png",
+  "grid": {
+    "columns": 2,
+    "rows": 1,
+    "frameWidth": 600,
+    "frameHeight": 800
+  },
+  "clips": [
+    {
+      "name": "idle",
+      "startFrame": 0,
+      "frameCount": 2,
+      "fps": 1,
+      "loop": true
+    }
+  ]
+}

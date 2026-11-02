@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>鲸鱼娘 · 三版调色对比</title>
+<style>
+  body { margin:0; padding:26px; font-family:"Segoe UI","Microsoft YaHei",sans-serif; background:#F7F9FD; color:#26365F; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { font-size:13px; opacity:.65; margin-bottom:18px; }
+  .row { display:flex; gap:18px; flex-wrap:wrap; }
+  .card { background:#fff; border:1px solid #E3EAF6; border-radius:16px; padding:12px; width:330px; box-shadow:0 6px 18px rgba(74,116,200,.07); }
+  .card img { width:306px; height:306px; border-radius:10px; display:block; }
+  .cap { margin-top:9px; font-size:12.5px; line-height:1.65; }
+  .k { color:#4A74C8; font-weight:600; }
+  .pill { display:inline-block; background:#EEF3FC; border-radius:999px; padding:1px 8px; font-size:11px; margin-right:4px; }
+  .base img { filter:saturate(0.85); }
+</style>
+</head>
+<body>
+<h1>三版调色对比</h1>
+<div class="sub">同 seed 771026 / 771027，去掉过重权重，neg 排除 monochrome · CPU 512×512 · 22 步</div>
+<div class="row">
+  <div class="card base">
+    <img src="sample-02.png" alt="sample-02">
+    <div class="cap">
+      <b>sample-02</b>（基准：表情和比例对，颜色丢光）<br>
+      <span class="pill">蓝像素 0.4%</span><span class="pill">灰 61.7%</span><span class="pill">暗部 36.5%</span>
+    </div>
+  </div>
+  <div class="card">
+    <img src="try-A.png" alt="try-A">
+    <div class="cap">
+      <b>try-A</b>（权重降到 1.25，cfg 7）<br>
+      <span class="pill">蓝像素 15.2%</span><span class="pill">灰 50.6%</span><span class="pill">暗部 32.7%</span>
+    </div>
+  </div>
+  <div class="card">
+    <img src="try-B.png" alt="try-B">
+    <div class="cap">
+      <b>try-B</b>（加 colorful，cfg 6.5）<br>
+      <span class="pill">蓝像素 49.6%</span><span class="pill">灰 40.8%</span><span class="pill">暗部 10.2%</span>
+    </div>
+  </div>
+  <div class="card">
+    <img src="try-C.png" alt="try-C">
+    <div class="cap">
+      <b>try-C</b>（换 seed 771027）<br>
+      <span class="pill">蓝像素 32.2%</span><span class="pill">灰 60.7%</span><span class="pill">暗部 5.7%</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

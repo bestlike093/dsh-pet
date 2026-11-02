@@ -1,0 +1,19 @@
+{
+  "overall": 82,
+  "status": "active",
+  "updatedAt": "2026-11-02",
+  "next": "余额监控 b2c 测试与 b3 真机接线",
+  "layers": [
+    { "name": "内核与契约", "value": 86 },
+    { "name": "渲染与模型", "value": 89 },
+    { "name": "桌面壳", "value": 86 },
+    { "name": "语音", "value": 83 },
+    { "name": "聊天与记忆", "value": 78 },
+    { "name": "设置与引导", "value": 92 },
+    { "name": "安全与加密", "value": 89 },
+    { "name": "能力中心", "value": 72 },
+    { "name": "陪伴反思", "value": 68 },
+    { "name": "打包分发", "value": 73 }
+  ],
+  "milestones": []
+}
