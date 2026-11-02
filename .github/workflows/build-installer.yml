@@ -1,0 +1,145 @@
+name: build-installer
+
+# 只做一件事：从公开仓库的源码，在 CI 里产出一个 Windows 未签名安装包。
+# 这一步是 SignPath Foundation 审核的硬前提 —— 他们要求待签名的二进制
+# 必须能被证明"由这个仓库的源码构建出来"，本地打包的 exe 不认。
+#
+# 目前 status:
+#   [x] 未签名 NSIS 安装包产出 + artifact
+#   [x] tag 触发时创建 Release 草稿（不自动发布）
+#   [ ] SignPath 签名：等 Foundation 申请通过后，按 onboarding 给的
+#       org / project / policy / artifact-configuration 四个标识接入，
+#       见文件末尾的注释块。未接之前不写半成品 job，避免 CI 长期飘红。
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+# Release 草稿需要写 contents；其余步骤只读。
+permissions:
+  contents: write
+
+concurrency:
+  group: build-installer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-installer:
+    name: windows installer (unsigned)
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 版本写死，和 package.json 的 packageManager 对齐（见勘误 E13）
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      # 素材是 assets-gen/source 的派生品，不进版本库，构建时现生成。
+      # 生成链依赖 ffprobe / ffmpeg（必需）与 pngquant（可选，缺失时退到无损）。
+      - name: Install asset toolchain
+        shell: bash
+        run: |
+          choco install ffmpeg pngquant --no-progress -y
+          # choco 装完后当前 shell 的 PATH 未必刷新，显式补两条
+          echo "C:/ProgramData/chocolatey/bin" >> "$GITHUB_PATH"
+
+      - name: Generate runtime assets
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm assets:build
+
+          # 素材目录是后续门禁（check-assets-license / check-image-size）
+          # 和 electron-builder 的 icon 路径的共同前提，空就是构建链断了。
+          if [ ! -d assets ] || [ -z "$(ls -A assets)" ]; then
+            echo '::error::assets/ 为空，素材生成失败'
+            exit 1
+          fi
+
+          # ATTRIBUTION.md 是手写授权声明，不在 assets-gen/source 里，
+          # 单独带进生成目录，否则 check-assets-license 会报「声明缺失」。
+          cp assets-gen/ATTRIBUTION.md assets/ATTRIBUTION.md
+          test -f assets/cyrene/icons/app-cyrene.png || {
+            echo '::error::缺少 electron-builder 的 icon：assets/cyrene/icons/app-cyrene.png'
+            exit 1
+          }
+
+      - name: Build
+        shell: bash
+        run: pnpm build
+
+      - name: Package (NSIS x64)
+        shell: bash
+        run: pnpm dist
+
+      # 产物名里带空格（"DSH Pet Setup 2.0.0-dev.0.exe"），用通配收集，
+      # 不要按固定文件名硬找。
+      - name: Collect artifact
+        shell: bash
+        run: |
+          set -e
+          ls -lh dist-pkg/*.exe
+          mkdir -p out
+          cp dist-pkg/*.exe out/
+          # 给下游步骤一个确定的未签名文件名
+          exe=$(ls out/*.exe | head -n 1)
+          echo "UNSIGNED_EXE=$exe" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-windows
+          path: out/*.exe
+          if-no-files-found: error
+          retention-days: 14
+
+      # 只有打 tag 才建 Release，且是草稿 —— 发布动作必须人工点。
+      - name: Create release draft
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: out/*.exe
+          generate_release_notes: true
+
+      - name: Summary
+        shell: bash
+        run: |
+          {
+            echo "### Unsigned installer built"
+            echo ""
+            echo "- 文件：\`$(basename "$UNSIGNED_EXE")\`"
+            echo "- 大小：$(du -h "$UNSIGNED_EXE" | cut -f1)"
+            echo "- 签名状态：**未签名**（SignPath Foundation 申请通过后接入）"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SignPath 接入位（等申请通过后再启用，现在不要打开）
+#
+# 通过后你会拿到四个标识：
+#   organization-id / project-slug / signing-policy-slug / artifact-configuration-slug
+# 以及一个 API token（存成仓库 secret：SIGNPATH_API_TOKEN，绝不要写进 yml）。
+#
+# 接入形状大致是：下载上一步的 unsigned-windows artifact → 提交签名请求 →
+# 等待完成 → 取回已签名产物 → 用已签名的替换 Release 附件。
+#
+# 具体 action 版本与输入名以 SignPath 发给你的 onboarding 模板为准，
+# 不要凭记忆写 —— 参数名写错会让这个 job 长期红，反而挡住建包。
+#
+# 官方集成文档：
+#   https://about.signpath.io/documentation/build-system-integrations/github-actions
+# ─────────────────────────────────────────────────────────────────────────────

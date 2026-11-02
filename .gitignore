@@ -35,6 +35,11 @@ electron-builder.debug.yml
 # 素材原图备份（optimize-assets --apply 生成）
 assets/.bak/
 
+# 运行时素材是 assets-gen/source 的派生品，构建时由 scripts/build-assets.mjs 生成，
+# 不入库。前导斜杠是必须的：写成 assets/ 会连 apps/desktop/electron/assets/
+# 一起忽略，托盘图标就会从版本库里消失。
+/assets/
+
 # 开发期临时目录（解压出来的模型 60MB+，按授权也不能入库）
 tmp/
 

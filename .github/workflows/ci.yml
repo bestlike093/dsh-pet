@@ -63,6 +63,30 @@ jobs:
             exit 1
           fi
 
+      # 素材是 assets-gen/source 的派生品，不入库（.gitignore 里 /assets/）。
+      # 但 check-assets-license / check-image-size 都读 assets/，
+      # 缺了这一步 verify 会直接判「assets/ 目录存在 = FAIL」。
+      # 生成链依赖 ffprobe / ffmpeg（必需）与 pngquant（可选，缺失退无损）。
+      - name: Install asset toolchain
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            choco install ffmpeg pngquant --no-progress -y
+            echo "C:/ProgramData/chocolatey/bin" >> "$GITHUB_PATH"
+          else
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg pngquant
+          fi
+
+      - name: Generate runtime assets
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm assets:build
+          # ATTRIBUTION.md 是手写授权声明，不在 assets-gen/source 里，单独带过来
+          cp assets-gen/ATTRIBUTION.md assets/ATTRIBUTION.md
+          test -f assets/cyrene/icons/app-cyrene.png
+
       - name: Test (full)
         run: pnpm test
 
