@@ -35,10 +35,12 @@ electron-builder.debug.yml
 # 素材原图备份（optimize-assets --apply 生成）
 assets/.bak/
 
-# 运行时素材是 assets-gen/source 的派生品，构建时由 scripts/build-assets.mjs 生成，
-# 不入库。前导斜杠是必须的：写成 assets/ 会连 apps/desktop/electron/assets/
-# 一起忽略，托盘图标就会从版本库里消失。
-/assets/
+# 运行时素材入库。
+# 曾经试过「assets-gen/source 是唯一真源，assets/ 构建时生成」，但 build-assets
+# 依赖系统 ffmpeg / pngquant，不同 runner 的版本会让量化结果不一致，令
+# check-image-size --strict 与 assets 相关测试在 CI 上随机红。构建可复现优先，
+# 生成的 assets/ 直接提交，`pnpm assets:build` 仍可用于本地重建。
+# 注意不要写成 assets/：无前导斜杠会连 apps/desktop/electron/assets/ 一起忽略。
 
 # 开发期临时目录（解压出来的模型 60MB+，按授权也不能入库）
 tmp/

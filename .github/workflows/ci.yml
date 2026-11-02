@@ -63,30 +63,14 @@ jobs:
             exit 1
           fi
 
-      # 素材是 assets-gen/source 的派生品，不入库（.gitignore 里 /assets/）。
-      # 但 check-assets-license / check-image-size 都读 assets/，
-      # 缺了这一步 verify 会直接判「assets/ 目录存在 = FAIL」。
-      # 生成链依赖 ffprobe / ffmpeg（必需）与 pngquant（可选，缺失退无损）。
-      - name: Install asset toolchain
+      # 素材已入库（见 .gitignore 的说明）。这里只做一次存在性断言，
+      # 防止将来有人误把 assets/ 从版本库里删掉却让门禁静默变空跑。
+      - name: Check assets present
         shell: bash
         run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            choco install ffmpeg pngquant --no-progress -y
-            echo "C:/ProgramData/chocolatey/bin" >> "$GITHUB_PATH"
-          else
-            sudo apt-get update
-            sudo apt-get install -y ffmpeg pngquant
-          fi
-
-      - name: Generate runtime assets
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm assets:build
-          # overlay 放的是不能由 build-assets 生成的手写文件：
-          # ATTRIBUTION.md、manifest.json、音效、贴纸、托盘图标。
-          cp -R assets-gen/overlay/. assets/
+          test -f assets/cyrene/manifest.json
           test -f assets/cyrene/icons/app-cyrene.png
+          test -f assets/ATTRIBUTION.md
 
       # 测试会 import @pet/* 与 packages/*/dist/*.js：
       # 没有 build，workspace 包解析不到 dist，game-daily / sync 两个套件直接加载失败。
@@ -95,16 +79,36 @@ jobs:
         run: pnpm build
 
       - name: Test (full)
-        run: pnpm test
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee test.log
 
       # verify.mjs 读 dist 产物，必须先 build + typecheck。
       # `pnpm verify` = build && typecheck && node scripts/verify.mjs。
       - name: Verify gates
-        run: pnpm verify
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm verify 2>&1 | tee verify.log
 
       # 独立跑一次，便于从日志里单独看出脱敏结果（不被 verify 的汇总吞掉）
       - name: Sanitize check
         run: node scripts/sanitize-check.mjs .
+
+      # 日志只留在 runner 上会随机器销毁。红了必须能拿到完整输出，
+      # 否则只能靠猜 —— 这一步就是为此存在的。
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-logs-${{ matrix.os }}
+          path: |
+            install.log
+            test.log
+            verify.log
+          if-no-files-found: ignore
+          retention-days: 7
 
   # 说明：CI 无 GUI，Electron 真机渲染验证仍需本地执行（登记 17.4）。
   # 不得用本 job 通过冒充真机验证 —— CI 抓「文件系统 / 运行时差异」，真机抓「渲染链路」。
