@@ -49,31 +49,11 @@ jobs:
         shell: bash
         run: pnpm install --frozen-lockfile
 
-      # 素材是 assets-gen/source 的派生品，不进版本库，构建时现生成。
-      # 生成链依赖 ffprobe / ffmpeg（必需）与 pngquant（可选，缺失时退到无损）。
-      - name: Install asset toolchain
+      # 素材随仓库提交（原因见 .gitignore）。构建不再现装 ffmpeg / pngquant，
+      # 少一个系统工具版本变量，产物更容易复现 —— 这是 SignPath 审核关心的点。
+      - name: Check assets present
         shell: bash
         run: |
-          choco install ffmpeg pngquant --no-progress -y
-          # choco 装完后当前 shell 的 PATH 未必刷新，显式补两条
-          echo "C:/ProgramData/chocolatey/bin" >> "$GITHUB_PATH"
-
-      - name: Generate runtime assets
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm assets:build
-
-          # 素材目录是后续门禁（check-assets-license / check-image-size）
-          # 和 electron-builder 的 icon 路径的共同前提，空就是构建链断了。
-          if [ ! -d assets ] || [ -z "$(ls -A assets)" ]; then
-            echo '::error::assets/ 为空，素材生成失败'
-            exit 1
-          fi
-
-          # overlay 放的是不能由 build-assets 生成的手写文件：
-          # ATTRIBUTION.md、manifest.json、音效、贴纸、托盘图标。
-          cp -R assets-gen/overlay/. assets/
           test -f assets/cyrene/manifest.json || {
             echo '::error::缺少 assets/cyrene/manifest.json，素材库无法解析'
             exit 1
