@@ -82,7 +82,14 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          pnpm test 2>&1 | tee test.log
+          if ! pnpm test 2>&1 | tee test.log; then
+            # 日志留在 artifact 里，但没登录时看不到。把失败用例顶成 annotation，
+            # 公开仓库也能直接读到是哪一条红的。
+            grep -aE '^ FAIL ' test.log | head -n 5 | while IFS= read -r line; do
+              echo "::error::$(printf '%s' "$line" | sed 's/\x1b\[[0-9;]*m//g')"
+            done
+            exit 1
+          fi
 
       # verify.mjs 读 dist 产物，必须先 build + typecheck。
       # `pnpm verify` = build && typecheck && node scripts/verify.mjs。
@@ -90,7 +97,12 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          pnpm verify 2>&1 | tee verify.log
+          if ! pnpm verify 2>&1 | tee verify.log; then
+            grep -aE '^(FAIL|P6_GATE_FAILED)' verify.log | head -n 5 | while IFS= read -r line; do
+              echo "::error::$(printf '%s' "$line" | sed 's/\x1b\[[0-9;]*m//g')"
+            done
+            exit 1
+          fi
 
       # 独立跑一次，便于从日志里单独看出脱敏结果（不被 verify 的汇总吞掉）
       - name: Sanitize check
