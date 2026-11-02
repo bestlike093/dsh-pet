@@ -399,7 +399,13 @@ assets/                 表情与立绘（自制，授权见 check-assets-licens
 - 本机同步只做到「写进一个目录」，没有跨设备冲突合并。
 - 状态栏的电量与 GPU 利用率在部分机器上拿不到，界面显示「—」属正常。
 - 余额监控的轮询尚未接进桌面壳；阈值告警与确认也未接入。
-- 还在开发，暂不发布。
+- 还在开发，安装包见 [Releases](https://github.com/bestlike093/dsh-pet/releases)。
+
+## Code signing policy
+
+Windows 安装包的签名策略、团队角色与隐私约定见 [CODE_SIGNING.md](CODE_SIGNING.md)。
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
 
 ## 许可
 
