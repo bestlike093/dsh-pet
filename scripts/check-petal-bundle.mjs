@@ -181,21 +181,27 @@ const dshDir = resolve(
 const mirrored = ['core.mjs', 'index.mjs']
 const drifted = []
 
-for (const name of mirrored) {
-  const from = join(bundleDir, name)
-  const to = join(dshDir, name)
-  if (!existsSync(to)) {
-    drifted.push(`${name} 缺失`)
-    continue
+// 这个副本只存在于同时检出 dsh-pet-framework 的开发机上。公开仓库与 CI 里
+// 没有它，此时跳过而不是报缺失——否则每个干净检出都会红在这一条上。
+if (!existsSync(dshDir)) {
+  console.log('SKIP dsh 副本检查：未检出 ../dsh-pet-framework')
+} else {
+  for (const name of mirrored) {
+    const from = join(bundleDir, name)
+    const to = join(dshDir, name)
+    if (!existsSync(to)) {
+      drifted.push(`${name} 缺失`)
+      continue
+    }
+    const a = readFileSync(from, 'utf8').replace(/\r\n/g, '\n')
+    const b = readFileSync(to, 'utf8').replace(/\r\n/g, '\n')
+    if (a !== b) drifted.push(`${name} 内容不同`)
   }
-  const a = readFileSync(from, 'utf8').replace(/\r\n/g, '\n')
-  const b = readFileSync(to, 'utf8').replace(/\r\n/g, '\n')
-  if (a !== b) drifted.push(`${name} 内容不同`)
-}
 
-if (drifted.length > 0) {
-  fail(`dsh 副本与 bundle 不同步（跑 pnpm petal:sync-dsh）：${drifted.join('，')}`)
-} else ok('dsh 副本与 bundle 同步')
+  if (drifted.length > 0) {
+    fail(`dsh 副本与 bundle 不同步（跑 pnpm petal:sync-dsh）：${drifted.join('，')}`)
+  } else ok('dsh 副本与 bundle 同步')
+}
 
 // ---- 结果 ----
 console.log('')
