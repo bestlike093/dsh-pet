@@ -4,7 +4,8 @@
 
 `assets/cyrene` 下的立绘、frames、表情、贴纸与音效，来自本仓库作者本人的项目 `bestlike093/cyrene-balance`（commit `c54d9f6`），均为作者自绘 / 自制。
 
-早期自制的 `whale-girl-emoji`、`whale-girl-emoji-soft`、`whale-girl-stand` 只作参考，不作为默认素材，也不随包。
+> 早期自制的 `whale-girl-emoji` / `whale-girl-emoji-soft` / `whale-girl-stand` 已从本仓库移除，
+> 不作为默认素材，也不随包。默认渲染只认 `assets/cyrene`。
 
 ## 使用范围
 

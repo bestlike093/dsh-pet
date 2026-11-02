@@ -71,9 +71,13 @@ jobs:
             exit 1
           fi
 
-          # ATTRIBUTION.md 是手写授权声明，不在 assets-gen/source 里，
-          # 单独带进生成目录，否则 check-assets-license 会报「声明缺失」。
-          cp assets-gen/ATTRIBUTION.md assets/ATTRIBUTION.md
+          # overlay 放的是不能由 build-assets 生成的手写文件：
+          # ATTRIBUTION.md、manifest.json、音效、贴纸、托盘图标。
+          cp -R assets-gen/overlay/. assets/
+          test -f assets/cyrene/manifest.json || {
+            echo '::error::缺少 assets/cyrene/manifest.json，素材库无法解析'
+            exit 1
+          }
           test -f assets/cyrene/icons/app-cyrene.png || {
             echo '::error::缺少 electron-builder 的 icon：assets/cyrene/icons/app-cyrene.png'
             exit 1

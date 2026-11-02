@@ -83,9 +83,16 @@ jobs:
         run: |
           set -o pipefail
           pnpm assets:build
-          # ATTRIBUTION.md 是手写授权声明，不在 assets-gen/source 里，单独带过来
-          cp assets-gen/ATTRIBUTION.md assets/ATTRIBUTION.md
+          # overlay 放的是不能由 build-assets 生成的手写文件：
+          # ATTRIBUTION.md、manifest.json、音效、贴纸、托盘图标。
+          cp -R assets-gen/overlay/. assets/
           test -f assets/cyrene/icons/app-cyrene.png
+
+      # 测试会 import @pet/* 与 packages/*/dist/*.js：
+      # 没有 build，workspace 包解析不到 dist，game-daily / sync 两个套件直接加载失败。
+      # 这一条不能挪到 Test 后面。
+      - name: Build
+        run: pnpm build
 
       - name: Test (full)
         run: pnpm test
