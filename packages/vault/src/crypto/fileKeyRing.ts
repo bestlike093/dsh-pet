@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { chmod, mkdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
 import { promisify } from 'node:util'
 import { ErrorCode, PetError } from '@pet/shared'
 import type { CryptoSuiteId } from '@pet/shared'
@@ -183,17 +184,59 @@ export function evaluateAclSids(
 /** 进程内缓存：SID 在一次运行里不会变，避免每次落盘都起一个 whoami。 */
 let cachedUserSid: string | null | undefined
 
+/**
+ * 系统目录里的 whoami 绝对路径。
+ *
+ * 不能只写 `whoami` 交给 PATH 解析：Git for Windows 的 MSYS 版 whoami 会排在
+ * 前面，它不认 `/user`，只回一个用户名，SID 就解析不出来。GitHub Actions 的
+ * windows runner 正好是这个环境，密钥环测试会因此整片报 KEY_PERMISSION。
+ */
+function nativeWhoami(): string {
+  const root = process.env.SystemRoot ?? process.env.windir
+  if (root) {
+    const candidate = join(root, 'System32', 'whoami.exe')
+    if (existsSync(candidate)) return candidate
+  }
+  return 'whoami'
+}
+
+/**
+ * 兜底：身份对象本身就能给出 SID，不依赖 PATH 里 whoami 是谁。
+ * whoami 拿不到 SID 时才走这条路，正常情况下不会多起一个进程。
+ */
+async function currentUserSidViaPowershell(): Promise<string | null> {
+  const root = process.env.SystemRoot ?? process.env.windir
+  const shell = root === undefined
+    ? 'powershell'
+    : join(root, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+  try {
+    const { stdout } = await execFileAsync(shell, [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      '[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value'
+    ])
+    const match = /\bS-1-5-[\d-]+\b/.exec(stdout)
+    return match === null ? null : match[0]
+  } catch {
+    return null
+  }
+}
+
 /** 取当前进程用户的 SID。失败返回 null，调用方按 unknown 处理。 */
 async function currentUserSid(): Promise<string | null> {
   if (cachedUserSid !== undefined) return cachedUserSid
+  let sid: string | null = null
   try {
-    const { stdout } = await execFileAsync('whoami', ['/user', '/fo', 'csv', '/nh'])
+    const { stdout } = await execFileAsync(nativeWhoami(), ['/user', '/fo', 'csv', '/nh'])
     const match = /\bS-1-5-[\d-]+\b/.exec(stdout)
-    cachedUserSid = match === null ? null : match[0]
+    sid = match === null ? null : match[0]
   } catch {
-    cachedUserSid = null
+    sid = null
   }
-  return cachedUserSid
+  if (sid === null) sid = await currentUserSidViaPowershell()
+  cachedUserSid = sid
+  return sid
 }
 
 /**
